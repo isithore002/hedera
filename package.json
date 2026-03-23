@@ -1,0 +1,22 @@
+{
+  "name": "hiero-cron-kit",
+  "version": "1.0.0",
+  "description": "Production-ready toolkit abstracting HIP-1215 native on-chain scheduling on Hedera.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "ethers": "^6.11.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  }
+}
