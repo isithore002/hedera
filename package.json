@@ -5,12 +5,16 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "hiero-cron": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsup",
     "test": "vitest run"
   },
   "license": "Apache-2.0",
   "dependencies": {
+    "commander": "^14.0.3",
     "ethers": "^6.11.1"
   },
   "devDependencies": {
