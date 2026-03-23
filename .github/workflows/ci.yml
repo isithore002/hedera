@@ -2,7 +2,7 @@ name: Hiero Library CI
 
 on:
   push:
-    branches:[ "main" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
