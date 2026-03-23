@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hiero Cron Kit — Dashboard</title>
+  <meta name="description" content="Monitor and manage HIP-1215 native on-chain cron contracts on the Hedera network.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --bg-card-hover: rgba(31, 41, 55, 0.8);
+      --border: rgba(75, 85, 99, 0.3);
+      --border-glow: rgba(99, 102, 241, 0.3);
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-primary: #818cf8;
+      --accent-secondary: #6366f1;
+      --accent-gradient: linear-gradient(135deg, #818cf8, #6366f1, #4f46e5);
+      --success: #34d399;
+      --success-bg: rgba(52, 211, 153, 0.1);
+      --warning: #fbbf24;
+      --warning-bg: rgba(251, 191, 36, 0.1);
+      --error: #f87171;
+      --error-bg: rgba(248, 113, 113, 0.1);
+      --info: #60a5fa;
+      --info-bg: rgba(96, 165, 250, 0.1);
+      --glow-primary: 0 0 20px rgba(99, 102, 241, 0.15);
+      --glow-success: 0 0 20px rgba(52, 211, 153, 0.15);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Animated background ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Glowing orbs ─── */
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.3;
+      pointer-events: none;
+      z-index: 0;
+      animation: orbFloat 15s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 400px; height: 400px; background: #6366f1; top: -100px; left: -100px; }
+    .orb-2 { width: 300px; height: 300px; background: #8b5cf6; bottom: -50px; right: -50px; animation-delay: -5s; }
+    .orb-3 { width: 200px; height: 200px; background: #3b82f6; top: 40%; left: 60%; animation-delay: -10s; }
+
+    @keyframes orbFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      50% { transform: translate(30px, -20px) scale(1.05); }
+      100% { transform: translate(-20px, 30px) scale(0.95); }
+    }
+
+    /* ─── Layout ─── */
+    .app { position: relative; z-index: 1; }
+
+    /* ─── Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      background: rgba(10, 14, 26, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--accent-gradient);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      box-shadow: var(--glow-primary);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(99, 102, 241, 0.5); }
+    }
+
+    .logo-text {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-text span {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .network-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--success-bg);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--success);
+    }
+
+    .network-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .btn {
+      padding: 8px 18px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg-card);
+      color: var(--text-primary);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .btn:hover {
+      border-color: var(--accent-primary);
+      background: rgba(99, 102, 241, 0.1);
+      box-shadow: var(--glow-primary);
+    }
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      border: none;
+      color: white;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+
+    /* ─── Main content ─── */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* ─── Hero section ─── */
+    .hero {
+      text-align: center;
+      padding: 40px 0 48px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-primary);
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .gradient {
+      background: var(--accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ─── Stats grid ─── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(20px);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--accent-gradient);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-glow);
+      transform: translateY(-2px);
+      box-shadow: var(--glow-primary);
+    }
+
+    .stat-card:hover::before { opacity: 1; }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .stat-icon.purple { background: rgba(99, 102, 241, 0.15); }
+    .stat-icon.green { background: var(--success-bg); }
+    .stat-icon.amber { background: var(--warning-bg); }
+    .stat-icon.blue { background: var(--info-bg); }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-value.purple { color: var(--accent-primary); }
+    .stat-value.green { color: var(--success); }
+    .stat-value.amber { color: var(--warning); }
+    .stat-value.blue { color: var(--info); }
+
+    .stat-change {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 8px;
+      padding: 2px 8px;
+      border-radius: 100px;
+    }
+
+    .stat-change.up { color: var(--success); background: var(--success-bg); }
+    .stat-change.down { color: var(--error); background: var(--error-bg); }
+
+    /* ─── Content grid ─── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(20px);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--border-glow);
+      box-shadow: var(--glow-primary);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-body { padding: 24px; }
+
+    /* ─── Schedule table ─── */
+    .schedule-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .schedule-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 12px 14px;
+    }
+
+    .schedule-table td {
+      padding: 14px 12px;
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .schedule-table tr {
+      transition: background 0.2s ease;
+    }
+
+    .schedule-table tbody tr:hover {
+      background: rgba(99, 102, 241, 0.04);
+    }
+
+    .schedule-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      color: var(--accent-primary);
+      font-size: 12px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .status-pill.active { color: var(--success); background: var(--success-bg); }
+    .status-pill.pending { color: var(--warning); background: var(--warning-bg); }
+    .status-pill.completed { color: var(--info); background: var(--info-bg); }
+    .status-pill.failed { color: var(--error); background: var(--error-bg); }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-pill.active .status-dot {
+      animation: blink 1.5s ease-in-out infinite;
+    }
+
+    /* ─── Activity feed ─── */
+    .activity-list { list-style: none; }
+
+    .activity-item {
+      display: flex;
+      gap: 14px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.2s ease;
+    }
+
+    .activity-item:last-child { border-bottom: none; }
+
+    .activity-item:hover {
+      background: rgba(99, 102, 241, 0.03);
+      margin: 0 -24px;
+      padding: 16px 24px;
+      border-radius: var(--radius-sm);
+    }
+
+    .activity-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .activity-icon.exec { background: var(--success-bg); }
+    .activity-icon.sched { background: var(--info-bg); }
+    .activity-icon.stop { background: var(--error-bg); }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-title {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .activity-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .activity-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* ─── Contract monitor (full width) ─── */
+    .full-width { grid-column: 1 / -1; }
+
+    .contract-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 1fr 100px;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: all 0.2s ease;
+    }
+
+    .contract-row:last-child { border-bottom: none; }
+
+    .contract-row:hover {
+      background: rgba(99, 102, 241, 0.04);
+    }
+
+    .contract-row-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .contract-name {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .contract-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .contract-avatar.vault { background: rgba(139, 92, 246, 0.15); }
+    .contract-avatar.payroll { background: rgba(52, 211, 153, 0.15); }
+    .contract-avatar.oracle { background: rgba(251, 191, 36, 0.15); }
+    .contract-avatar.airdrop { background: rgba(96, 165, 250, 0.15); }
+
+    .contract-label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .contract-id {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .contract-meta {
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(75, 85, 99, 0.3);
+      border-radius: 100px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 1.5s ease;
+    }
+
+    .progress-fill.green { background: linear-gradient(90deg, #34d399, #10b981); }
+    .progress-fill.purple { background: var(--accent-gradient); }
+    .progress-fill.amber { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+
+    /* ─── TPS Ticker ─── */
+    .tps-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 32px;
+      backdrop-filter: blur(20px);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tps-section::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent-primary), var(--success), var(--accent-primary), transparent);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .tps-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .tps-value {
+      font-size: 64px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      background: linear-gradient(135deg, var(--success), var(--accent-primary));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .tps-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    .tps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .tps-metric-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tps-metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-top: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      text-align: center;
+      padding: 32px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .footer a {
+      color: var(--accent-primary);
+      text-decoration: none;
+    }
+
+    .footer a:hover { text-decoration: underline; }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 1024px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .content-grid { grid-template-columns: 1fr; }
+      .contract-row { grid-template-columns: 2fr 1fr 1fr; }
+      .contract-row > :nth-child(n+4) { display: none; }
+    }
+
+    @media (max-width: 640px) {
+      .header { padding: 16px; }
+      .main { padding: 16px; }
+      .hero h1 { font-size: 28px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .tps-value { font-size: 42px; }
+      .tps-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Animations ─── */
+    .fade-in {
+      animation: fadeIn 0.6s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in:nth-child(1) { animation-delay: 0.1s; }
+    .fade-in:nth-child(2) { animation-delay: 0.2s; }
+    .fade-in:nth-child(3) { animation-delay: 0.3s; }
+    .fade-in:nth-child(4) { animation-delay: 0.4s; }
+
+    /* counter animation */
+    .count-up { transition: all 0.5s ease; }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <div class="app">
+    <!-- ─── Header ─── -->
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-icon">🕐</div>
+        <div class="logo-text"><span>Hiero</span>CronKit</div>
+      </div>
+      <div class="header-right">
+        <div class="network-badge">
+          <span class="network-dot"></span>
+          Testnet Connected
+        </div>
+        <select id="networkSelect" class="btn" onchange="switchNetwork(this.value)">
+          <option value="testnet">Testnet</option>
+          <option value="mainnet">Mainnet</option>
+          <option value="previewnet">Previewnet</option>
+        </select>
+        <button class="btn btn-primary" onclick="openContractModal()">+ Monitor Contract</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- ─── Hero ─── -->
+      <section class="hero">
+        <div class="hero-badge">⚡ HIP-1215 Native Scheduling</div>
+        <h1>Smart Contracts with a <span class="gradient">Heartbeat</span></h1>
+        <p>Monitor and manage autonomous cron contracts powered by Hedera's native on-chain scheduling. Zero bots. Zero centralization.</p>
+      </section>
+
+      <!-- ─── TPS Impact ─── -->
+      <section class="tps-section fade-in">
+        <div class="tps-label">Estimated Daily TPS Impact</div>
+        <div class="tps-value" id="tpsCounter">0</div>
+        <div class="tps-sub">Transactions generated by HieroCron contracts — no human intervention required</div>
+        <div class="tps-grid">
+          <div>
+            <div class="tps-metric-label">Active Contracts</div>
+            <div class="tps-metric-value" id="activeContractsCount" style="color: var(--accent-primary);">0</div>
+          </div>
+          <div>
+            <div class="tps-metric-label">Monthly Transactions</div>
+            <div class="tps-metric-value" id="monthlyTxCount" style="color: var(--success);">0</div>
+          </div>
+          <div>
+            <div class="tps-metric-label">Avg. Interval</div>
+            <div class="tps-metric-value" id="avgInterval" style="color: var(--warning);">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── Stats ─── -->
+      <div class="stats-grid">
+        <div class="stat-card fade-in">
+          <div class="stat-icon purple">📋</div>
+          <div class="stat-label">Total Schedules</div>
+          <div class="stat-value purple" id="statTotalSchedules">0</div>
+          <div class="stat-change up">↑ 12 today</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-icon green">✅</div>
+          <div class="stat-label">Executed</div>
+          <div class="stat-value green" id="statExecuted">0</div>
+          <div class="stat-change up">↑ 8 today</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-icon amber">⏳</div>
+          <div class="stat-label">Pending</div>
+          <div class="stat-value amber" id="statPending">0</div>
+          <div class="stat-change up">↑ 4 queued</div>
+        </div>
+        <div class="stat-card fade-in">
+          <div class="stat-icon blue">❌</div>
+          <div class="stat-label">Failed</div>
+          <div class="stat-value blue" id="statFailed">0</div>
+          <div class="stat-change down">↓ 1 resolved</div>
+        </div>
+      </div>
+
+      <!-- ─── Contracts Monitor (Full Width) ─── -->
+      <div class="card full-width fade-in" style="margin-bottom: 32px;">
+        <div class="card-header">
+          <div class="card-title">🏗️ Monitored Contracts</div>
+          <button class="btn" onclick="refreshContracts()">⟳ Refresh</button>
+        </div>
+        <div class="contract-row contract-row-header">
+          <div>Contract</div>
+          <div>Status</div>
+          <div>Interval</div>
+          <div>Executions</div>
+          <div>Progress</div>
+          <div>Next Run</div>
+        </div>
+        <div id="contractsList">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- ─── Two column: Schedules + Activity ─── -->
+      <div class="content-grid">
+        <!-- Upcoming Schedules -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <div class="card-title">📅 Upcoming Schedules</div>
+            <button class="btn" onclick="refreshSchedules()">View All</button>
+          </div>
+          <div class="card-body" style="padding: 0;">
+            <table class="schedule-table">
+              <thead>
+                <tr>
+                  <th>Schedule ID</th>
+                  <th>Contract</th>
+                  <th>Status</th>
+                  <th>Expires</th>
+                </tr>
+              </thead>
+              <tbody id="schedulesTableBody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="card fade-in">
+          <div class="card-header">
+            <div class="card-title">🔔 Activity Feed</div>
+            <button class="btn">Filter</button>
+          </div>
+          <div class="card-body">
+            <ul class="activity-list" id="activityFeed">
+              <!-- Populated by JS -->
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <p>Hiero Cron Kit — Built for the <a href="https://hellofuturehackathon.dev/">Hedera Hello Future Apex Hackathon 2026</a></p>
+      <p style="margin-top: 8px;">Powered by <a href="https://hips.hedera.com/hip/hip-1215">HIP-1215</a> Native On-Chain Scheduling &middot; Apache-2.0 License</p>
+    </footer>
+  </div>
+
+  <!-- ─── Modal ─── -->
+  <div id="contractModal" style="display:none; position:fixed; inset:0; z-index:200; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center;">
+    <div style="background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px; max-width: 480px; width: 90%;">
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;">Monitor a Contract</h2>
+      <div style="margin-bottom: 16px;">
+        <label style="font-size: 13px; color: var(--text-secondary); font-weight: 500; display: block; margin-bottom: 6px;">Contract ID</label>
+        <input id="contractInput" type="text" placeholder="0.0.1234" style="width: 100%; padding: 10px 14px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 14px; outline: none;" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--border)'" />
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button class="btn" onclick="closeContractModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="addContract()">Add Contract</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Simulated data ────────────────────────────────────────────
+    const contracts = [
+      { id: '0.0.4521887', name: 'DailyVaultRebalancer', icon: '🏦', type: 'vault', interval: 86400, maxExec: 0, currentExec: 142, status: 'active' },
+      { id: '0.0.4521903', name: 'WeeklyPayroll', icon: '💰', type: 'payroll', interval: 604800, maxExec: 52, currentExec: 38, status: 'active' },
+      { id: '0.0.4521956', name: 'OracleUpdater', icon: '🔮', type: 'oracle', interval: 3600, maxExec: 0, currentExec: 2847, status: 'active' },
+      { id: '0.0.4522001', name: 'AirdropDistributor', icon: '🎁', type: 'airdrop', interval: 43200, maxExec: 30, currentExec: 30, status: 'completed' },
+    ];
+
+    const schedules = [
+      { id: '0.0.9001234', contract: '0.0.4521956', status: 'active', expires: '2 min' },
+      { id: '0.0.9001235', contract: '0.0.4521887', status: 'pending', expires: '6 hrs' },
+      { id: '0.0.9001236', contract: '0.0.4521903', status: 'pending', expires: '3 days' },
+      { id: '0.0.9001233', contract: '0.0.4521956', status: 'completed', expires: 'Executed' },
+      { id: '0.0.9001230', contract: '0.0.4522001', status: 'completed', expires: 'Executed' },
+      { id: '0.0.9001228', contract: '0.0.4521887', status: 'completed', expires: 'Executed' },
+    ];
+
+    const activities = [
+      { type: 'exec', title: 'OracleUpdater executed cron #2847', meta: '0.0.4521956', time: '32s ago' },
+      { type: 'sched', title: 'New schedule created for OracleUpdater', meta: '0.0.9001234', time: '32s ago' },
+      { type: 'exec', title: 'DailyVaultRebalancer executed cron #142', meta: '0.0.4521887', time: '2h ago' },
+      { type: 'sched', title: 'New schedule created for DailyVaultRebalancer', meta: '0.0.9001235', time: '2h ago' },
+      { type: 'stop', title: 'AirdropDistributor completed all 30 executions', meta: '0.0.4522001', time: '6h ago' },
+      { type: 'exec', title: 'WeeklyPayroll executed cron #38', meta: '0.0.4521903', time: '1d ago' },
+    ];
+
+    // ─── Render functions ──────────────────────────────────────────
+
+    function formatInterval(seconds) {
+      if (seconds >= 86400) return `${Math.round(seconds / 86400)}d`;
+      if (seconds >= 3600) return `${Math.round(seconds / 3600)}h`;
+      if (seconds >= 60) return `${Math.round(seconds / 60)}m`;
+      return `${seconds}s`;
+    }
+
+    function renderContracts() {
+      const el = document.getElementById('contractsList');
+      el.innerHTML = contracts.map(c => {
+        const progress = c.maxExec > 0 ? Math.round((c.currentExec / c.maxExec) * 100) : null;
+        const progressClass = c.status === 'completed' ? 'green' : c.status === 'active' ? 'purple' : 'amber';
+        const nextRun = c.status === 'completed' ? '—' : c.status === 'active' ? (c.interval < 7200 ? 'Soon' : formatInterval(c.interval)) : '—';
+        
+        return `
+          <div class="contract-row">
+            <div class="contract-name">
+              <div class="contract-avatar ${c.type}">${c.icon}</div>
+              <div>
+                <div class="contract-label">${c.name}</div>
+                <div class="contract-id">${c.id}</div>
+              </div>
+            </div>
+            <div>
+              <span class="status-pill ${c.status}"><span class="status-dot"></span>${c.status}</span>
+            </div>
+            <div class="contract-meta">${formatInterval(c.interval)}</div>
+            <div class="contract-meta">${c.currentExec}${c.maxExec > 0 ? ' / ' + c.maxExec : ' / ∞'}</div>
+            <div>
+              ${progress !== null 
+                ? `<div style="font-size:12px; color: var(--text-muted);">${progress}%</div><div class="progress-bar"><div class="progress-fill ${progressClass}" style="width: ${progress}%"></div></div>`
+                : `<div style="font-size:12px; color: var(--text-muted);">∞ loop</div><div class="progress-bar"><div class="progress-fill purple" style="width: 100%"></div></div>`
+              }
+            </div>
+            <div class="contract-meta" style="color: var(--text-secondary);">${nextRun}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSchedules() {
+      const el = document.getElementById('schedulesTableBody');
+      el.innerHTML = schedules.map(s => `
+        <tr>
+          <td><span class="schedule-id">${s.id}</span></td>
+          <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary);">${s.contract}</td>
+          <td><span class="status-pill ${s.status}"><span class="status-dot"></span>${s.status}</span></td>
+          <td style="color: var(--text-secondary);">${s.expires}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderActivity() {
+      const el = document.getElementById('activityFeed');
+      const icons = { exec: '✅', sched: '📅', stop: '🛑' };
+      el.innerHTML = activities.map(a => `
+        <li class="activity-item">
+          <div class="activity-icon ${a.type}">${icons[a.type]}</div>
+          <div class="activity-content">
+            <div class="activity-title">${a.title}</div>
+            <div class="activity-meta">${a.meta}</div>
+          </div>
+          <div class="activity-time">${a.time}</div>
+        </li>
+      `).join('');
+    }
+
+    // ─── Animated counters ─────────────────────────────────────────
+
+    function animateCounter(el, target, duration = 1500, suffix = '') {
+      const start = 0;
+      const startTime = performance.now();
+
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const current = Math.round(start + (target - start) * eased);
+        el.textContent = current.toLocaleString() + suffix;
+        if (progress < 1) requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+    }
+
+    function updateStats() {
+      const totalSchedules = schedules.length;
+      const executed = schedules.filter(s => s.status === 'completed').length;
+      const pending = schedules.filter(s => s.status === 'active' || s.status === 'pending').length;
+      const failed = 1;
+
+      animateCounter(document.getElementById('statTotalSchedules'), 247);
+      animateCounter(document.getElementById('statExecuted'), 203);
+      animateCounter(document.getElementById('statPending'), 38);
+      animateCounter(document.getElementById('statFailed'), 6);
+
+      // TPS calculations
+      const activeContracts = contracts.filter(c => c.status === 'active');
+      const dailyTx = activeContracts.reduce((sum, c) => sum + Math.round((86400 / c.interval) * 2), 0);
+      const monthlyTx = dailyTx * 30;
+      const avgInt = Math.round(activeContracts.reduce((sum, c) => sum + c.interval, 0) / activeContracts.length);
+
+      animateCounter(document.getElementById('tpsCounter'), dailyTx);
+      animateCounter(document.getElementById('activeContractsCount'), activeContracts.length);
+      animateCounter(document.getElementById('monthlyTxCount'), monthlyTx);
+      document.getElementById('avgInterval').textContent = formatInterval(avgInt);
+    }
+
+    // ─── Network switch ────────────────────────────────────────────
+
+    function switchNetwork(network) {
+      document.querySelector('.network-badge').innerHTML = `<span class="network-dot"></span>${network.charAt(0).toUpperCase() + network.slice(1)} Connected`;
+    }
+
+    // ─── Modal ─────────────────────────────────────────────────────
+
+    function openContractModal() {
+      const modal = document.getElementById('contractModal');
+      modal.style.display = 'flex';
+    }
+
+    function closeContractModal() {
+      document.getElementById('contractModal').style.display = 'none';
+    }
+
+    function addContract() {
+      const input = document.getElementById('contractInput');
+      const id = input.value.trim();
+      if (!id) return;
+
+      contracts.push({
+        id,
+        name: 'Custom Contract',
+        icon: '📄',
+        type: 'vault',
+        interval: 3600,
+        maxExec: 0,
+        currentExec: 0,
+        status: 'active',
+      });
+
+      renderContracts();
+      updateStats();
+      closeContractModal();
+      input.value = '';
+    }
+
+    function refreshContracts() {
+      // Simulate refresh with animation
+      document.getElementById('contractsList').style.opacity = '0.5';
+      setTimeout(() => {
+        renderContracts();
+        document.getElementById('contractsList').style.opacity = '1';
+      }, 500);
+    }
+
+    function refreshSchedules() {
+      // Simulate refresh
+      const tbody = document.getElementById('schedulesTableBody');
+      tbody.style.opacity = '0.5';
+      setTimeout(() => {
+        renderSchedules();
+        tbody.style.opacity = '1';
+      }, 500);
+    }
+
+    // ─── Initialize ────────────────────────────────────────────────
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderContracts();
+      renderSchedules();
+      renderActivity();
+      setTimeout(updateStats, 300);
+
+      // Live counter simulation
+      setInterval(() => {
+        const oracleContract = contracts.find(c => c.name === 'OracleUpdater');
+        if (oracleContract) {
+          oracleContract.currentExec++;
+          renderContracts();
+        }
+      }, 8000);
+    });
+  </script>
+</body>
+</html>
