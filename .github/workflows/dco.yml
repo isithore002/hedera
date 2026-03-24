@@ -1,0 +1,26 @@
+name: DCO Check
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  dco_check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: DCO Check
+        run: |
+          # Ensure all commits have a Signed-off-by line
+          for commit in $(git rev-list origin/main..HEAD); do
+            if ! git log -1 --format=%B $commit | grep -q 'Signed-off-by:'; then
+              echo "Commit $commit is missing DCO Sign-off."
+              echo "Please sign your commits using: git commit -s -m 'message'"
+              exit 1
+            fi
+            echo "Commit $commit has valid DCO."
+          done

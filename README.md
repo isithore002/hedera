@@ -60,7 +60,8 @@ Check out the `contracts/examples` directory for:
 - `DailyVaultRebalancer.sol`
 - `AutoPayroll.sol`
 - `ScheduledAirdrop.sol`
-- `PriceFeedUpdater.sol`
+- `PriceFeedUpdater.sol` (Chainlink Aggregator)
+- `PythFeedUpdater.sol` (Pyth Network)
 
 ### 2. Monitor using the Dashboard
 Run a local tracker UI with native Mirror Node integration:

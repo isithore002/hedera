@@ -3,6 +3,19 @@ pragma solidity ^0.8.20;
 
 import "../HieroCron.sol";
 
+interface AggregatorV3Interface {
+  function latestRoundData()
+    external
+    view
+    returns (
+      uint80 roundId,
+      int256 answer,
+      uint256 startedAt,
+      uint256 updatedAt,
+      uint80 answeredInRound
+    );
+}
+
 /**
  * @title PriceFeedUpdater
  * @dev Autonomous oracle price feed contract using HieroCron.
@@ -22,7 +35,10 @@ contract PriceFeedUpdater is HieroCron {
 
     PriceData public latestPrice;
     PriceData[] public priceHistory;
-    address public priceSource;
+    
+    // Chainlink Data Feed Address (e.g. BTC/USD)
+    address public chainlinkAggregator;
+    
     uint256 public roundCount;
 
     // Price deviation threshold in basis points (e.g., 100 = 1%)
@@ -32,21 +48,22 @@ contract PriceFeedUpdater is HieroCron {
     event SignificantDeviation(uint256 indexed roundId, uint256 oldPrice, uint256 newPrice, uint256 deviationBps);
 
     constructor(
-        address _priceSource,
+        address _chainlinkAggregator,
         uint256 _intervalSeconds,
         uint256 _deviationThresholdBps
     ) HieroCron(_intervalSeconds, 0) {
-        priceSource = _priceSource;
+        chainlinkAggregator = _chainlinkAggregator;
         deviationThresholdBps = _deviationThresholdBps;
     }
 
     function _executeTask() internal override {
         roundCount++;
 
-        // In production: read price from an external source contract
-        // uint256 newPrice = IPriceSource(priceSource).getPrice();
-        // For demonstration, use a simple block-based "price"
-        uint256 newPrice = uint256(keccak256(abi.encodePacked(block.timestamp, block.number))) % 10000;
+        // Call the Chainlink Price Feed (AggregatorV3Interface)
+        (, int256 price, , , ) = AggregatorV3Interface(chainlinkAggregator).latestRoundData();
+        
+        require(price > 0, "Invalid price returned");
+        uint256 newPrice = uint256(price);
 
         // Check for significant deviation
         if (latestPrice.price > 0) {
